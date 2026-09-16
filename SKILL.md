@@ -152,15 +152,22 @@ non-interactive shell does not. A plain `ssh host 'codex-run.sh ...'` then exits
 `~/.npm-global/bin` on Ubuntu. Export the directory first when driving the
 wrapper over ssh.
 
-## On macOS
+## Platforms
 
-Verified on macOS 26.6.2, arm64, against a real Codex run.
+Both have been run against a real Codex, and neither needs configuration.
 
-The machine also runs the fallback throughout, because Apple ships neither
-`timeout(1)` nor `setsid`, and `/bin/bash` is 3.2. So the perl `setpgrp`
-launcher starts the child, and `now_ms` reads `date +%s%N` rather than
+**Linux** takes the primary path and asks nothing of you. `timeout(1)` caps the
+run and `setsid` puts the child in its own process group. Verified on Ubuntu
+26.04, x86_64, bash 5.3, Codex 0.144.4. One caveat belongs to this path rather
+than to the platform: the cap overshoot in the limitations below is twice as
+large here as on macOS.
+
+**macOS** takes the fallback throughout, because Apple ships neither
+`timeout(1)` nor `setsid`, and `/bin/bash` is 3.2. The perl `setpgrp` launcher
+starts the child instead, and `now_ms` reads `date +%s%N` rather than
 `EPOCHREALTIME`, which bash 3.2 does not define. Both work: a descendant left
-running was stopped in 153ms, and a 1-second sleep measured 1016ms.
+running was stopped in 153ms, and a 1-second sleep measured 1016ms. Verified on
+macOS 26.6.2, arm64, Codex 0.154.0. Perl is required; it ships with the system.
 
 ## Known limitations
 
