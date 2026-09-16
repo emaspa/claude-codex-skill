@@ -143,14 +143,18 @@ unrelated SIGTERM keeps its own `143`.
 - A TERM or HUP to the wrapper stops Codex's process group before the temp files are removed. Left alone, Codex kept running and recreated its `-o` file after the cleanup had deleted it.
 - The transcript filter reads with `grep -a`, so a NUL byte in Codex's stderr does not replace the diagnostic with "binary file matches".
 
+## Finding the codex binary over ssh
+
+Package managers put the CLI somewhere a login shell searches and a
+non-interactive shell does not. A plain `ssh host 'codex-run.sh ...'` then exits
+2 with `codex-run: codex CLI not found on PATH`. Seen with a Homebrew cask in
+`/opt/homebrew/bin` on macOS and with an npm global prefix in
+`~/.npm-global/bin` on Ubuntu. Export the directory first when driving the
+wrapper over ssh.
+
 ## On macOS
 
 Verified on macOS 26.6.2, arm64, against a real Codex run.
-
-Homebrew installs the CLI as a cask, which puts it in `/opt/homebrew/bin`. A
-login shell finds it; a non-interactive `ssh host 'codex-run.sh ...'` does not,
-and the wrapper exits 2 with `codex-run: codex CLI not found on PATH`. Export
-the directory first when driving it over ssh.
 
 The machine also runs the fallback throughout, because Apple ships neither
 `timeout(1)` nor `setsid`, and `/bin/bash` is 3.2. So the perl `setpgrp`
@@ -160,8 +164,9 @@ running was stopped in 153ms, and a 1-second sleep measured 1016ms.
 
 ## Known limitations
 
-Three defects are documented rather than fixed.
+Four defects are documented rather than fixed.
 
 - With `timeout(1)`, `gtimeout`, `setsid` and perl all absent, the watchdog can signal only the direct child. A descendant that child leaves behind can outlive the cap and hold the output pipe open. The script prints `codex-run: no setsid or perl; --timeout cannot reach grandchild processes` on stderr at startup and continues.
 - Bash has no monotonic clock. On the `timeout(1)` path the `124` versus `137` decision reads the wall clock, so a clock adjustment mid-run skews it. A backward step can leave a real timeout reported as `137`.
+- A timed-out run overshoots its cap by a fixed amount, because the kill grace is spent in series rather than shared. On the `timeout(1)` path `timeout -k` waits `KILL_GRACE` for the leader and the group cleanup then waits `KILL_GRACE` again for anything still alive, so the wrapper returns after roughly `TIMEOUT + 2 x KILL_GRACE`. Measured on Ubuntu with the default 10s grace: a 2s cap returned 124 after 22.4s and a 5s cap after 25.4s, a constant 20.4s tail. The fallback path spends the grace once, so macOS measured a 2s cap at 13.4s. At the default 1800s cap this is under 2%; at a cap of a few seconds it dominates.
 - A SIGINT to the wrapper does not cancel the run. Bash holds the signal while the foreground pipeline runs, so Codex finishes and the wrapper exits with its code as if nothing happened. Send TERM to cancel.

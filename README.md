@@ -10,7 +10,9 @@ A Claude Code skill for handing a self-contained coding or analysis task to the 
 - The `codex` CLI on `PATH` and an authenticated session. Check with `codex login status`.
 - `jq` for the live progress trace. Without it, the run still works but has no progress trace.
 
-The wrapper also works on macOS without `timeout` or `setsid`, using a shell watchdog and a Perl `setpgrp` launcher. The source documentation records testing on macOS 26.6.2 with Bash 3.2. Perl must be available for that launcher.
+The wrapper also works on macOS without `timeout` or `setsid`, using a shell watchdog and a Perl `setpgrp` launcher. Perl must be available for that launcher.
+
+Tested against real Codex runs on Ubuntu 26.04 with Bash 5.3 and Codex 0.144.4, and on macOS 26.6.2 with Bash 3.2 and Codex 0.154.0. The macOS run exercises the fallback throughout, since Apple ships neither `timeout` nor `setsid`.
 
 ## Installation
 
