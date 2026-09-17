@@ -10,6 +10,8 @@ Codex runs as a separate agent with its own context. It shares no memory with th
 
 The entry point is `{baseDir}/codex-run.sh`, where `{baseDir}` is the absolute directory containing this `SKILL.md`. Always invoke that absolute path.
 
+Launch it with `run_in_background: true` and relay the trace as it arrives. Every delegation, whether or not the user asks for progress. See [Run it in the background and watch it](#run-it-in-the-background-and-watch-it).
+
 ## Usage
 
 ```bash
@@ -25,17 +27,23 @@ The entry point is `{baseDir}/codex-run.sh`, where `{baseDir}` is the absolute d
 The final answer goes to stdout. A live progress trace goes to stderr. The exit code is
 Codex's own, so non-zero means the run failed.
 
+Every one of these goes in a background call, so the user can read the trace while the run
+is going rather than after it ends.
+
 ## Run it in the background and watch it
 
 A Codex run takes minutes. In the foreground it is a frozen shell call that shows nothing
-until it ends. Launch it with `run_in_background: true` instead, then poll `TaskOutput` and
-relay what Codex is doing, the way a subagent reports in.
+until it ends, so every delegation goes in the background with the trace relayed live. Do
+this without being asked.
 
-1. Start the run in the background.
+1. Start the run with `run_in_background: true`.
 2. Poll `TaskOutput` every 30 to 60 seconds.
 3. Summarize each new stretch of trace for the user in a line or two: the commands it ran,
    the files it touched, what it is on now. Do not paste the raw trace.
 4. On exit, the final message is the last thing on stdout.
+
+Run it in the foreground only when the caller asked for silence, or when the task is small
+enough that the whole thing lands inside one poll interval.
 
 The trace is one stamped line per event:
 
@@ -53,8 +61,9 @@ command with its `↳` result, `✎` file changes, `⚙` an MCP tool call, `⌕`
 `☑` a todo update, `✗` an error. The clock is elapsed time, so a step that has stalled
 looks stalled.
 
-Pass `--quiet` when the trace has no reader, such as a scripted call that only wants
-stdout. It also holds back Codex's own transcript, which Codex writes to stderr. A failed
+Pass `--quiet` only when the trace has no reader at all, such as a scripted call that
+parses stdout. Never on a delegation a user is waiting on. It also holds back Codex's
+own transcript, which Codex writes to stderr. A failed
 run still gets that transcript, since it is the only diagnostic left. The trace needs
 `jq`; without it the run is silent but otherwise unchanged.
 

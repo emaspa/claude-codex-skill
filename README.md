@@ -33,7 +33,7 @@ ln -s ~/src/claude-codex-skill ~/.claude/skills/codex
 
 ## Usage
 
-In Claude Code, invoke `/codex` with a self-contained task, or ask it to delegate a task to Codex.
+In Claude Code, invoke `/codex` with a self-contained task, or ask it to delegate a task to Codex. The run goes in the background and Claude relays the progress trace as it arrives, so you see what Codex is doing without asking.
 
 You can also run the wrapper from a terminal. This example reviews the current directory using the default `read-only` sandbox:
 
